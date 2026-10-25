@@ -360,7 +360,9 @@ void FrameRecorder::emitShaderDelta(std::span<const Shader* const> shaders) {
 
 void FrameRecorder::writeDelta(std::span<const Span> spans, std::span<const std::uint64_t> hostPages, std::span<const Range> added) {
     if (abandonIfDiskLow()) return;
-    const auto [accepted, completed] = DriverDetail::Driver::Get().SerialProgress();
+    auto& driver = DriverDetail::Driver::Get();
+    if (!driver.WaitIdleFor(std::chrono::seconds(10))) throw std::runtime_error("frame capture: the driver did not go idle within 10 s while recording a memory delta");
+    const auto [accepted, completed] = driver.SerialProgress();
     const auto group = deltaGroups + 1;
     bool any = false;
     std::vector<std::pair<std::uint64_t, std::uint64_t>> written;
